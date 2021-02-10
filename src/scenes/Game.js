@@ -1,4 +1,5 @@
 import Phaser from '../lib/phaser.js'
+import Carrot from '../game/Carrot.js'
 
 export default class Game extends Phaser.Scene {
     /** @type {Phaser.Physics.Arcade.Sprite} */
@@ -10,6 +11,9 @@ export default class Game extends Phaser.Scene {
     /** @type {Phaser.Types.Input.Keyboard.CursorKeys} */
     cursors
 
+    /** @type {Phaser.Physics.Arcade.Group} */
+    carrots
+
     constructor() {
         super('game')
     }
@@ -19,6 +23,7 @@ export default class Game extends Phaser.Scene {
         this.load.image('background', 'assets/Background/bg_layer1.png')
         this.load.image('platform', 'assets/Environment/ground_grass.png')
         this.load.image('bunny-stand', 'assets/Players/bunny2_stand.png')
+        this.load.image('carrot', 'assets/Items/carrot.png')
 
         // Load keys
         this.cursors = this.input.keyboard.createCursorKeys()
@@ -62,6 +67,14 @@ export default class Game extends Phaser.Scene {
 
         // set deadzone
         this.cameras.main.setDeadzone(this.scale.width * 1.5)
+
+        // add the carrot
+        this.carrots = this.physics.add.group({
+            classType: Carrot
+        })
+
+        this.carrots.get(240, 360, 'carrot')
+        this.physics.add.collider(this.platforms, this.carrots)
     }
 
     update() { // CAUTION: performs every frame
@@ -73,7 +86,10 @@ export default class Game extends Phaser.Scene {
             if (platform.y >= scrollY + 700) {
                 platform.y = scrollY - Phaser.Math.Between(50, 100)
                 platform.body.updateFromGameObject()
+
+                this.addCarrotAbove(platform)
             }
+
         }) 
         
         const touchingDown = this.player.body.touching.down
@@ -106,5 +122,18 @@ export default class Game extends Phaser.Scene {
         } else if (sprite.x > gameWidth + halfWidth) {
             sprite.x = -halfWidth
         }
+    }
+
+    addCarrotAbove(sprite) {
+        const y = sprite.y - sprite.displayHeight
+
+        const carrot = this.carrots.get(sprite.x, y, 'carrot')
+
+        this.add.existing(carrot)
+
+        // physics body height
+        carrot.body.setSize(carrot.width, carrot.height)
+
+        return carrot
     }
 }
