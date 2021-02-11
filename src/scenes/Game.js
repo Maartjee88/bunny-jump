@@ -2,6 +2,7 @@ import Phaser from '../lib/phaser.js'
 import Carrot from '../game/Carrot.js'
 
 export default class Game extends Phaser.Scene {
+    carrotsCollected = 0
     /** @type {Phaser.Physics.Arcade.Sprite} */
     player
 
@@ -75,9 +76,21 @@ export default class Game extends Phaser.Scene {
 
         this.carrots.get(240, 360, 'carrot')
         this.physics.add.collider(this.platforms, this.carrots)
+
+        // collect those carrots!
+        this.physics.add.overlap(
+            this.player,
+            this.carrots,
+            this.handleCollectCarrot,
+            undefined,
+            this
+        )
+
+        const style = {color: '#000', fontSize: 24}
+        this.carrotsCollectedText = this.add.text(240, 10, 'Carrots: 0', style).setScrollFactor(0).setOrigin(0.5, 0)
     }
 
-    update() { // CAUTION: performs every frame
+    update(t, dt) { // CAUTION: performs every frame
         this.platforms.children.iterate(child => {
             /** @type {Phaser.Physics.Arcade.Sprite} */
             const platform = child
@@ -129,11 +142,29 @@ export default class Game extends Phaser.Scene {
 
         const carrot = this.carrots.get(sprite.x, y, 'carrot')
 
+        carrot.setActive(true)
+        carrot.setVisible(true)
+
         this.add.existing(carrot)
 
         // physics body height
         carrot.body.setSize(carrot.width, carrot.height)
 
+        this.physics.world.enable(carrot)
+
         return carrot
+    }
+
+    /**
+ * @param {Phaser.Physics.Arcade.Sprite} player
+ * @param {Carrot} carrot
+ */
+    handleCollectCarrot(player, carrot) {
+        this.carrots.killAndHide(carrot)
+        this.physics.world.disableBody(carrot.body)
+        this.carrotsCollected++
+
+        const value = `Carrots: ${this.carrotsCollected}`
+        this.carrotsCollectedText.text = value
     }
 }
