@@ -19,11 +19,16 @@ export default class Game extends Phaser.Scene {
         super('game')
     }
 
+    init() {
+        this.carrotsCollected = 0;
+    }
+
     preload() {
         // Load assets
         this.load.image('background', 'assets/Background/bg_layer1.png')
         this.load.image('platform', 'assets/Environment/ground_grass.png')
         this.load.image('bunny-stand', 'assets/Players/bunny2_stand.png')
+        this.load.image('bunny-jump', 'assets/Players/bunny2_jump.png')
         this.load.image('carrot', 'assets/Items/carrot.png')
 
         // Load keys
@@ -90,7 +95,7 @@ export default class Game extends Phaser.Scene {
         this.carrotsCollectedText = this.add.text(240, 10, 'Carrots: 0', style).setScrollFactor(0).setOrigin(0.5, 0)
     }
 
-    update(t, dt) { // CAUTION: performs every frame
+    update() { // CAUTION: performs every frame
         this.platforms.children.iterate(child => {
             /** @type {Phaser.Physics.Arcade.Sprite} */
             const platform = child
@@ -109,6 +114,14 @@ export default class Game extends Phaser.Scene {
 
         if (touchingDown) {
             this.player.setVelocityY(-300)
+
+            this.player.setTexture('bunny-jump')
+        }
+
+        const vy = this.player.body.velocity.y
+        if (vy > 0 && this.player.texture.key !== 'bunny-stand') {
+            // switch back to jump when falling
+            this.player.setTexture('bunny-stand')
         }
 
         // Left and right input logic
@@ -123,6 +136,12 @@ export default class Game extends Phaser.Scene {
         }
 
         this.horizontalWrap(this.player)
+
+        const bottomPlatform = this.findBottomMostPlatform()
+
+        if (this.player.y > bottomPlatform.y + 200) {
+            this.scene.start('game-over')
+        }
     }
 
     /** @param {Phaser.GameObjects.Sprite} sprite */
@@ -166,5 +185,22 @@ export default class Game extends Phaser.Scene {
 
         const value = `Carrots: ${this.carrotsCollected}`
         this.carrotsCollectedText.text = value
+    }
+
+    findBottomMostPlatform() {
+        const platforms = this.platforms.getChildren()
+        let bottomPlatform = platforms[0]
+
+        for (let i = 1; i < platforms.length; i++) {
+            const platform = platforms[i]
+
+            if (platform.y < bottomPlatform.y) {
+                continue
+            }
+
+            bottomPlatform = platform
+        }
+
+        return bottomPlatform
     }
 }
